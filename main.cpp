@@ -130,6 +130,7 @@ void triangle3(Vec3f *pts, float *zbuffer, TGAImage &image, TGAColor color)
                 zbuffer[x+y*width]=z;
                 image.set(x,y,color);
             }
+            z+=dz;
         }
     }
     for(int x = int(pts[1].x)+1; x<=int(pts[2].x);x++)
@@ -153,6 +154,7 @@ void triangle3(Vec3f *pts, float *zbuffer, TGAImage &image, TGAColor color)
                 zbuffer[x+y*width]=z;
                 image.set(x,y,color);
             }
+            z+=dz;
         }
     }
 }
