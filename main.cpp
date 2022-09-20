@@ -206,6 +206,7 @@ int main(int argc, char** argv)
         {
             worlds[j] = model->vert(face[j]);
             pts[j] = Vec3f((worlds[j].x+1.)*width/2. , (worlds[j].y+1.)*height/2. , worlds[j].z);
+            //pts[j] = Vec3f(int((worlds[j].x+1.)*width/2. + 0.5 ), int((worlds[j].y+1.)*height/2. + 0.5), worlds[j].z);
         }
         //if(i==1015) std::cout<<pts[0]<<","<<pts[1]<<","<<pts[2]<<std::endl;
         Vec3f n = cross(worlds[2]-worlds[0],worlds[1]-worlds[0]).normalize();
