@@ -106,7 +106,7 @@ void triangle3(Vec3f *pts, float *zbuffer, TGAImage &image, TGAColor color)
     int dy = (pts[1].y>pts[0].y+(pts[1].x-pts[0].x)*(pts[2].y-pts[0].y)/(pts[2].x-pts[0].x)?1:-1);
     int yS, yE;//yS is near the edge AB, while yE is near the edge A-C--B
     float z, dz = dy*dzCal(pts);// if 
-    for(int x = int(floor(pts[0].x)); x<=int(pts[1].x);x++)
+    for(int x = int(ceil(pts[0].x)); x<=int(pts[1].x);x++)
     {   //from A to C, if int(pts[0].x)==int(pts[1].x), the loop will be skip, 
         //since A and C are in the same column, no points in the plane (x, . , .) belongs to the triangle
         //so we need not to worry about the case of C.x-A.x == 0.f
@@ -121,7 +121,7 @@ void triangle3(Vec3f *pts, float *zbuffer, TGAImage &image, TGAColor color)
             yS+=dy;
             z+=dz;
         }
-        if(inTriangle2(pts[0],pts[1],pts[2],Vec3f(x,yE,0))) yE-=dy;
+        if(!inTriangle2(pts[0],pts[1],pts[2],Vec3f(x,yE,0))) yE-=dy;
         for(int y = yS; dy*y<=dy*yE; y+=dy)
         {
             //std::cout<<x<<","<<y<<std::endl;
@@ -145,7 +145,7 @@ void triangle3(Vec3f *pts, float *zbuffer, TGAImage &image, TGAColor color)
             yS+=dy;
             z+=dz;
         }
-        if(inTriangle2(pts[0],pts[1],pts[2],Vec3f(x,yE,0))) yE-=dy;
+        if(!inTriangle2(pts[0],pts[1],pts[2],Vec3f(x,yE,0))) yE-=dy;
         for(int y = yS; dy*y<=dy*yE; y+=dy)
         {
             //std::cout<<x<<","<<y<<std::endl;
@@ -198,9 +198,6 @@ int main(int argc, char** argv)
     TGAImage image(width, height, TGAImage::RGB);
     for (int i=0; i<model->nfaces(); i++) {
         //std::cout<<model->nfaces()<<","<<i<<std::endl;
-        //srand(int(time(0)));
-        //int i = rand()%model->nfaces();
-        //int i =1827;
         std::vector<int> face = model->face(i);
         Vec3f worlds[3];
         Vec3f pts[3];
@@ -210,7 +207,7 @@ int main(int argc, char** argv)
             pts[j] = Vec3f((worlds[j].x+1.)*width/2. , (worlds[j].y+1.)*height/2. , worlds[j].z);
             //pts[j] = Vec3f(int((worlds[j].x+1.)*width/2. + 0.5 ), int((worlds[j].y+1.)*height/2. + 0.5), worlds[j].z);
         }
-        //if(i==1015) std::cout<<pts[0]<<","<<pts[1]<<","<<pts[2]<<std::endl;
+        //if(i==472) std::cout<<pts[0]<<","<<pts[1]<<","<<pts[2]<<std::endl;
         Vec3f n = cross(worlds[2]-worlds[0],worlds[1]-worlds[0]).normalize();
         float intensity = n*light_dir;
         if (intensity>0) 
@@ -233,13 +230,9 @@ int main()
     for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
     TGAImage image(width, height, TGAImage::RGB);
     Vec3f pts[3];
-    srand((int)time(0));
-    //pts[0] = Vec3f(rand()%800, rand()%800, (rand()%100-50)/float(50));
-    //pts[1] = Vec3f(rand()%800, rand()%800, (rand()%100-50)/float(50));
-    //pts[2] = Vec3f(rand()%800, rand()%800, (rand()%100-50)/float(50));
-    pts[0] = Vec3f(400.284, 752.482, 0.320973);
-    pts[1] = Vec3f(400.324, 711.676, 0.437668);
-    pts[2]=  Vec3f(425.998, 710.867, 0.432594);
+    pts[0] = Vec3f(400.284, 783.855, 0.167019);
+    pts[1] = Vec3f(400.284, 752.482, 0.320973);
+    pts[2]=  Vec3f(427.583, 750.817, 0.315395);
     //std::cout<<pts[0]<<","<<pts[1]<<","<<pts[2]<<std::endl;
     triangle3(pts,zbuffer,image,red);
     //std::cout<<image.get(400,400)<<std::endl;
