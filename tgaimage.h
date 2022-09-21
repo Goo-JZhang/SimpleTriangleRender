@@ -58,7 +58,6 @@ struct TGAColor {
 		}
 		return *this;
 	}
-
 	bool operator ==(const TGAColor &c) const
 	{
 		if(bytespp==c.bytespp)
@@ -84,6 +83,11 @@ struct TGAColor {
 		return out;
 	}	
 };
+
+TGAColor operator *(float k , const TGAColor &c);
+
+
+TGAColor operator *(const TGAColor &c, float k);
 
 class TGAImage {
 protected:

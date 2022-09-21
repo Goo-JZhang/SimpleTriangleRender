@@ -5,6 +5,30 @@
 #include <math.h>
 #include "tgaimage.h"
 
+TGAColor operator *(float k , const TGAColor &c)
+{
+	TGAColor r = TGAColor();
+	r.bytespp = c.bytespp;
+	int A = (c.bytespp==4?3:c.bytespp);
+	for(int i = 0;i<A;i++)
+	{
+		r.raw[i] = k*c.raw[i];
+	}
+	return r;
+}
+
+TGAColor operator *(const TGAColor &c, float k)
+{
+	TGAColor r = TGAColor();
+	r.bytespp = c.bytespp;
+	int A = (c.bytespp==4?3:c.bytespp);
+	for(int i = 0;i<A;i++)
+	{
+		r.raw[i] = k*c.raw[i];
+	}
+	return r;
+}
+
 TGAImage::TGAImage() : data(NULL), width(0), height(0), bytespp(0) {
 }
 

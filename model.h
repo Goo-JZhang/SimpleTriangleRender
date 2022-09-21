@@ -7,6 +7,8 @@
 class Model {
 private:
 	std::vector<Vec3f> verts_;
+	std::vector<Vec2f> txverts_;
+	std::vector<Vec3f> nverts_;
 	std::vector<std::vector<int> > faces_;
 public:
 	Model(const char *filename);
@@ -14,6 +16,8 @@ public:
 	int nverts();
 	int nfaces();
 	Vec3f vert(int i);
+	Vec2f txvert(int i);
+	Vec3f nvert(int i);
 	std::vector<int> face(int idx);
 };
 
