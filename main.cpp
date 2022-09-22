@@ -18,6 +18,13 @@ const int width  = 800;
 const int height = 800;
 Vec3f light_dir(0,0,-1);
 
+Vec3f camera_pos(0,0,5);
+Vec3f camera_dir(0,0,-1);
+Vec3f camera_up(0,1,0);
+Vec3f camera_right = cross(camera_dir,camera_up);
+Vec2f screen_size(1.5,1.5);
+float camera_plane = 4;
+
 void line(Vec2i p0, Vec2i p1, TGAImage &image, TGAColor color) 
 {
     bool steep=false;
@@ -101,7 +108,6 @@ void triangle3(Vec3f *pts, Vec2f *vts, Vec3f *vns, float *zbuffer, TGAImage &ima
     //we can figure out the points (int,int,float) near the edge of triangle ABC
     //for any x(int), we can corresponding y in the edge AB and the edge A-C-B
     if(int(pts[2].x)==int(pts[0].x)) return;
-    int width = image.get_width();
     int txwidth = texture.get_width();
     int txheight = texture.get_height();
     //std::cout<<txwidth<<","<<txheight<<std::endl;
@@ -120,6 +126,8 @@ void triangle3(Vec3f *pts, Vec2f *vts, Vec3f *vns, float *zbuffer, TGAImage &ima
         //since A and C are in the same column, no points in the plane (x, . , .) belongs to the triangle
         //so we need not to worry about the case of C.x-A.x == 0.f
         //calculate the range of y
+        if(x<0) continue;
+        if(x>=width) return;
         yS = pts[0].y + ((x-pts[0].x)/(pts[2].x-pts[0].x))*(pts[2].y-pts[0].y);
         Vec3f bc_screenStart = barycentric(pts[0],pts[1],pts[2],Vec3f(x,yS,0));
         yE = pts[0].y + ((x-pts[0].x)/(pts[1].x-pts[0].x))*(pts[1].y-pts[0].y);
@@ -136,10 +144,13 @@ void triangle3(Vec3f *pts, Vec2f *vts, Vec3f *vns, float *zbuffer, TGAImage &ima
         if(!inTriangle2(pts[0],pts[1],pts[2],Vec3f(x,yE,0))) yE-=dy;
         for(int y = yS; dy*y<=dy*yE; y+=dy)
         {
-            if(zbuffer[x+y*width]<z)
+            if(y<0){if(dy>0) continue; else break;}
+            if(y>=height){if(dy<0){z+=dz; Vn+=dVn; Vt+=dVt ; continue;} else break;}
+            if(zbuffer[x+y*width]>z&&z>camera_plane)
             {
                 zbuffer[x+y*width]=z;
                 float intensity = -(Vn*light_dir);
+                //std::cout<<intensity<<std::endl;
                 if(intensity>0) image.set(x,y,intensity*texture.get(Vt.x*txwidth,Vt.y*txheight));
             }
             z +=dz;
@@ -150,6 +161,8 @@ void triangle3(Vec3f *pts, Vec2f *vts, Vec3f *vns, float *zbuffer, TGAImage &ima
     for(int x = int(pts[1].x)+1; x<=int(pts[2].x);x++)
     {   //calculate from C to B.
         //std::cout<<x<<std::endl;
+        if(x<0) continue;
+        if(x>=width) return;
         yS = pts[0].y + ((x-pts[0].x)/(pts[2].x-pts[0].x))*(pts[2].y-pts[0].y);
         Vec3f bc_screenStart = barycentric(pts[0],pts[1],pts[2],Vec3f(x,yS,0));
         yE = pts[1].y + ((x-pts[1].x)/(pts[2].x-pts[1].x))*(pts[2].y-pts[1].y);
@@ -166,11 +179,13 @@ void triangle3(Vec3f *pts, Vec2f *vts, Vec3f *vns, float *zbuffer, TGAImage &ima
         if(!inTriangle2(pts[0],pts[1],pts[2],Vec3f(x,yE,0))) yE-=dy;
         for(int y = yS; dy*y<=dy*yE; y+=dy)
         {
-            //std::cout<<x<<","<<y<<std::endl;
-            if(zbuffer[x+y*width]<z)
+            if(y<0){if(dy>0) continue; else break;}
+            if(y>=height){if(dy<0){z+=dz; Vn+=dVn; Vt+=dVt ; continue;} else break;}
+            if(zbuffer[x+y*width]>z&&z>camera_plane)
             {
                 zbuffer[x+y*width]=z;
                 float intensity = -(Vn*light_dir);
+                //std::cout<<intensity<<std::endl;
                 if(intensity>0) image.set(x,y,intensity*texture.get(Vt.x*txwidth,Vt.y*txheight));
             }
             z +=dz;
@@ -178,6 +193,25 @@ void triangle3(Vec3f *pts, Vec2f *vts, Vec3f *vns, float *zbuffer, TGAImage &ima
             Vt+=dVt;
         }
     }
+}
+
+Vec3f World2Screen(Vec3f worldc)
+{
+    Vec3f temp_v = worldc-camera_pos;
+    float z = temp_v*camera_dir;
+    float r;
+    if(z<camera_plane) r = 1;
+    else r = camera_plane/z;
+    Vec3f screen;
+    screen.z = z;
+    screen.y = ((temp_v*camera_up)*r+screen_size.y/2.)*height/screen_size.y;
+    screen.x = ((temp_v*camera_right)*r+screen_size.x/2.)*width/screen_size.x;
+    return screen;
+}
+
+Vec3f world2screen(Vec3f worldc)
+{
+    return Vec3f((worldc.x+1)*width/2., (worldc.y+1)*height/2., worldc.z);
 }
 
 int main(int argc, char** argv) 
@@ -190,15 +224,15 @@ int main(int argc, char** argv)
         model = new Model("obj/african_head.obj");
     }
     float *zbuffer = new float[width*height];
-    for (int i=width*height; i--; zbuffer[i] = -std::numeric_limits<float>::max());
+    for (int i=width*height; i--; zbuffer[i] = std::numeric_limits<float>::max());
     TGAImage image(width, height, TGAImage::RGB);
-    TGAImage texture;
-    texture.read_tga_file("obj/african_head_diffuse.tga");
-    texture.flip_vertically();
+    model->get_texture("obj/african_head_diffuse.tga");
+    TGAImage texture = model->texture();
     for (int i=0; i<model->nfaces(); i++) {
         //std::cout<<model->nfaces()<<","<<i<<std::endl;
         //srand(time(0));
-        //int i = rand()%(model->nfaces());
+        //int i = 1179;
+        //std::cout<<i<<std::endl;
         std::vector<int> face = model->face(i);
         Vec3f worlds[3];
         Vec3f pts[3];
@@ -209,17 +243,15 @@ int main(int argc, char** argv)
             worlds[j] = model->vert(face[3*j]);
             txs[j] = model->txvert(face[3*j+1]);
             nvs[j] = model->nvert(face[3*j+2]);
-            pts[j] = Vec3f((worlds[j].x+1.)*width/2. , (worlds[j].y+1.)*height/2. , worlds[j].z);
+            pts[j] = World2Screen(worlds[j]);
             //std::cout<<pts[j]<<","<<txs[j]<<","<<nvs[j]<<std::endl;
             //pts[j] = Vec3f(int((worlds[j].x+1.)*width/2. + 0.5 ), int((worlds[j].y+1.)*height/2. + 0.5), worlds[j].z);
         }
-        //Vec3f n = cross(worlds[2]-worlds[0],worlds[1]-worlds[0]).normalize();
-        //float intensity = n*light_dir;
-        //if (intensity>0) 
-        //{
-            //std::cout<<i<<","<<pts[0]<<","<<pts[1]<<","<<pts[2]<<std::endl;
-            triangle3(pts, txs, nvs , zbuffer, image, texture);
-        //}
+        //if(i==24){
+            //std::cout<<worlds[0]<<" , "<<worlds[1]<<" , "<<worlds[2]<<std::endl;
+            //std::cout<<pts[0]<<" , "<<pts[1]<<" , "<<pts[2]<<std::endl;
+        //} 
+        triangle3(pts, txs, nvs , zbuffer, image, texture);
     }
     image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
     image.write_tga_file("african_head.tga");

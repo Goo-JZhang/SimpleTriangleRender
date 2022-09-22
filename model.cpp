@@ -50,6 +50,12 @@ Model::Model(const char *filename) : verts_(), txverts_(), nverts_(), faces_() {
 Model::~Model() {
 }
 
+void Model::get_texture(const char *texture_filename)
+{
+    texture_.read_tga_file(texture_filename);
+    texture_.flip_vertically();
+}
+
 int Model::nverts() {
     return (int)verts_.size();
 }
@@ -72,4 +78,24 @@ Vec2f Model::txvert(int i){
 
 Vec3f Model::nvert(int i){
     return nverts_[i];
+}
+
+int Model::texture_height()
+{
+    return texture_.get_height();
+}
+
+int Model::texture_width()
+{
+    return texture_.get_width();
+}
+
+TGAColor Model::texture_color(const Vec2f uv)
+{
+    return texture_.get(uv[0]*texture_.get_width(), uv[0]*texture_.get_height());
+}
+
+TGAImage Model::texture()
+{
+    return texture_;
 }
